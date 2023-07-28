@@ -10,7 +10,6 @@ import 'notiflix/src/notiflix.css';
 import { getImages } from '../service/api';
 import {useRef, useState, useEffect} from 'react';
 
-
 const App = () => {
   // state
   const [images, setImages] = useState([]);
@@ -94,8 +93,6 @@ const App = () => {
   }, [isLoading, querry, page, maxPage, images]);
   
   
-
-
   return (
        <div className={css.App}>
         <Searchbar querry={querry} onChange={handleChange} onSubmit={handleSubmit}/>
