@@ -54,21 +54,7 @@ const App = () => {
     return { id: nanoid(), webformatURL, tags, largeImageURL }
   })
 
-  const fetchData = async () => {
-      try {
-         const data = await getImages(querry, page);
-        if (!data.hits.length) throw new Error("Sorry, there are no images matching your search query. Please try again.");
-        const imagesPage = generateGalleryItems(data.hits)
-        setImages([...images, ...imagesPage] )
-        if (maxPage === 0) setMaxPage(Math.ceil(data.totalHits / 12))
-      } catch (error) {
-        onError(error)
-      } finally {
-        setIsLoading( false);
-      }
-  }
-
-  // Modal
+   // Modal
   const imageClick = ({ target: { dataset: { large }, alt } }) => {
     if (!large) return
     const imageOptions = { largeImageURL: large, tags: alt }
@@ -93,12 +79,21 @@ const App = () => {
   }, [isShowModal]);
   
    useEffect( () => {
-     if (isLoading) fetchData()
-  }, [isLoading]);
+     if (isLoading) {
+       getImages(querry, page).then(
+         data => {
+           if (!data.hits.length) throw new Error("Sorry, there are no images matching your search query. Please try again.");
+           if (maxPage === 0) setMaxPage(Math.ceil(data.totalHits / 12))
+           return generateGalleryItems(data.hits)
+          }
+       ).then(imagesPage => setImages([...images, ...imagesPage]))
+         .catch(onError).finally(() => setIsLoading(false))
+     }
+
+     if (images.length > 0) refLastElem.current.scrollIntoView({ behavior: 'smooth' })
+  }, [isLoading, querry, page, maxPage, images]);
   
-  useEffect(() => {
-    if (images.length > 0) refLastElem.current.scrollIntoView({ behavior: 'smooth' })
-  }, [images])
+  
 
 
   return (
