@@ -8,7 +8,8 @@ import { nanoid } from "nanoid";
 import Notiflix from 'notiflix';
 import 'notiflix/src/notiflix.css';
 import { getImages } from '../service/api';
-import {useRef, useState, useEffect} from 'react';
+import {useRef, useState, useEffect, useCallback} from 'react';
+
 
 const App = () => {
   // state
@@ -53,7 +54,21 @@ const App = () => {
     return { id: nanoid(), webformatURL, tags, largeImageURL }
   })
 
-   // Modal
+  const fetchData = useCallback(async () => {
+      try {
+         const data = await getImages(querry, page);
+        if (!data.hits.length) throw new Error("Sorry, there are no images matching your search query. Please try again.");
+        const imagesPage = generateGalleryItems(data.hits)
+        setImages([...images, ...imagesPage] )
+        if (maxPage === 0) setMaxPage(Math.ceil(data.totalHits / 12))
+      } catch (error) {
+        onError(error)
+      } finally {
+        setIsLoading( false);
+      }
+  },[images, maxPage, querry, page])
+
+  // Modal
   const imageClick = ({ target: { dataset: { large }, alt } }) => {
     if (!large) return
     const imageOptions = { largeImageURL: large, tags: alt }
@@ -78,21 +93,14 @@ const App = () => {
   }, [isShowModal]);
   
    useEffect( () => {
-     if (isLoading) {
-       getImages(querry, page).then(
-         data => {
-           if (!data.hits.length) throw new Error("Sorry, there are no images matching your search query. Please try again.");
-           if (maxPage === 0) setMaxPage(Math.ceil(data.totalHits / 12))
-           return generateGalleryItems(data.hits)
-          }
-       ).then(imagesPage => setImages([...images, ...imagesPage]))
-         .catch(onError).finally(() => setIsLoading(false))
-     }
+     if (isLoading) fetchData()
+  }, [isLoading, fetchData]);
+  
+  useEffect(() => {
+    if (images.length > 0) refLastElem.current.scrollIntoView({ behavior: 'smooth' })
+  }, [images])
 
-     if (images.length > 0) refLastElem.current.scrollIntoView({ behavior: 'smooth' })
-  }, [isLoading, querry, page, maxPage, images]);
-  
-  
+
   return (
        <div className={css.App}>
         <Searchbar querry={querry} onChange={handleChange} onSubmit={handleSubmit}/>
